@@ -1,0 +1,159 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover"><title>Image Keysort · Touch Prototype</title>
+<style>
+:root{color-scheme:dark;font-family:system-ui,Segoe UI,sans-serif;background:#07101d;color:#e9f1ff;--panel:#122036;--line:#2b3c54;--mint:#2ee4af}*{box-sizing:border-box}body{margin:0;min-height:100svh;display:flex;justify-content:center;background:linear-gradient(155deg,#0f2135,#07101d 65%)}button,input,select{font:inherit}button{cursor:pointer;color:inherit;border:0} .app{width:min(100%,460px);min-height:100svh;padding:calc(14px + env(safe-area-inset-top, 0px)) 12px calc(14px + env(safe-area-inset-bottom, 0px));display:flex;flex-direction:column;gap:10px;background:#0c1727;box-shadow:0 0 90px #0008}.top{display:flex;justify-content:space-between;align-items:center;gap:10px}.top .details{flex:1;min-width:0}.name{display:block;text-align:left;background:none;font-weight:780;font-size:16px;width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:0}.meta{font-size:11px;color:#91a5bd;margin-top:4px}.gear{background:var(--panel);border-radius:10px;padding:9px 12px}.mode{font-weight:900;letter-spacing:1px;text-transform:uppercase;font-size:10px;color:var(--mint);margin-bottom:4px}.canvas{position:relative;width:100%;aspect-ratio:1;background:#090f1a;border:1px solid var(--line);border-radius:16px;overflow:hidden;touch-action:none;user-select:none}.media{height:100%;width:100%;object-fit:contain;display:block}.vid{background:#000}.center{position:absolute;width:66px;height:66px;left:50%;top:50%;transform:translate(-50%,-50%);border-radius:50%;background:#27bd95;display:grid;place-content:center;text-align:center;border:2px solid #d7fff4;z-index:4;box-shadow:0 5px 24px #0009;touch-action:none;cursor:grab;font-size:26px;transition:opacity .14s ease}.center small{font-size:9px;color:#08241f;font-weight:850;max-width:55px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}.node{position:absolute;transform:translate(-50%,-50%);display:grid;justify-items:center;z-index:3;width:68px;cursor:pointer;transition:opacity .12s,transform .19s;touch-action:none}.circle{width:53px;height:53px;border-radius:50%;display:grid;place-items:center;font-size:24px;border:2px solid #ffffff40;box-shadow:0 7px 18px #0007}.empty{border:2px dashed #526882;background:#1c3149;color:#cde5ff}.node small{font-size:10px;font-weight:750;text-shadow:0 2px 7px black;max-width:92px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:3px}.wedge{position:absolute;inset:0;pointer-events:none;z-index:1}.fingerprompt{position:absolute;bottom:10px;left:0;right:0;font-size:10px;text-align:center;color:#fff9;text-shadow:0 1px 5px black;pointer-events:none}.nav{display:flex;justify-content:center;align-items:center;gap:12px}.thumb{width:70px;height:60px;border:1px solid var(--line);border-radius:10px;overflow:hidden;padding:0;background:var(--panel)}.thumb img{width:100%;height:100%;object-fit:cover}.count{min-width:118px;background:#182a42;border-radius:12px;padding:10px;text-align:center}.count b{font-size:18px}.count small{display:block;font-size:10px;color:#a3afc0}.desc{font-size:11px;text-align:center;line-height:1.5;color:#a6b7ce;min-height:37px}.tools{display:flex;flex-direction:column;gap:7px;padding:8px 0;width:100%}.tool-row{display:flex;gap:6px;width:100%;min-width:0}.tool-row button{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:10px 3px;font-size:clamp(9px,3vw,12px)}.tools button,.mini{border-radius:10px;background:#24364e;font-weight:720}.mini{white-space:nowrap;padding:11px 13px;font-size:12px}.tools .accent,.mini.accent{background:#136f5a}.tools .active{background:#1d7561}.tools .danger{background:#68293d}.bottom{margin-top:auto;font-size:10px;text-align:center;color:#667a95}.overlay{position:fixed;inset:0;background:#020812bd;display:grid;place-items:center;padding:14px;z-index:20}.dialog{width:min(100%,410px);max-height:85svh;overflow:auto;background:#17263b;border:1px solid #43546d;border-radius:18px;padding:18px;box-shadow:0 16px 70px #0009}.dialog h3{font-size:18px;margin:0 0 18px}.dialog label{display:block;font-size:12px;color:#b0bfd2;margin:12px 0 6px;font-weight:720}.dialog input,.dialog select{background:#101c2d;border:1px solid #465a76;border-radius:9px;color:white;padding:12px;width:100%}.dialog footer{display:flex;gap:9px;margin-top:17px}.dialog footer button{flex:1}.palette{display:flex;flex-wrap:wrap;gap:6px}.palette button{width:37px;height:37px;display:grid;place-items:center;background:#101c2d;border:2px solid #465a76;border-radius:9px;font-size:20px}.palette button.sel{border-color:white}.group{display:flex;gap:8px;flex-wrap:wrap}.group>button{flex:1}.item{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid #34445a;gap:8px}.muted{color:#99aec7;font-size:12px;line-height:1.45}.cropframe canvas{display:block;position:absolute;inset:0;width:100%;height:100%;pointer-events:none} 
+.canvas.edit-active{border:2px solid #34d399} 
+.cropbox{position:absolute;border:2px solid #2ff7b9;background:#2ff7b92a;touch-action:none;cursor:move}.cropbox:before,.cropbox:after{content:'';position:absolute;width:13px;height:13px;border:2px solid white;background:#25b98c;border-radius:4px;bottom:-7px;right:-7px}.cropbox:before{top:-7px;left:-7px;bottom:auto;right:auto}.cropcontrols{position:absolute;bottom:8px;left:8px;right:8px;z-index:8;display:flex;gap:9px}.cropcontrols button{flex:1;background:#17283bee;border:1px solid #a5bbc7;border-radius:9px;padding:10px}.cropcontrols button.ok{background:#14856a}.banner{background:#18354b;border:1px solid #325a72;color:#d1e7f3;border-radius:10px;padding:9px 12px;font-size:11px}input[type=file]{display:none}video{max-width:100%}
+</style><style>
+/* Crop overlays cover the displayed pixels only, not the surrounding square. */
+.cropframe{position:absolute;z-index:7;touch-action:none;user-select:none;pointer-events:auto}
+.cropframe canvas{display:block;position:absolute;inset:0;width:100%;height:100%;pointer-events:none} 
+.canvas.edit-active{border:2px solid #34d399} 
+.cropbox{position:absolute;border:2px solid #2ff7b9;background:rgba(47,247,185,.15);touch-action:none;cursor:move;box-shadow:0 0 0 1px #0a4530}
+.cropbox::before,.cropbox::after{content:none!important}
+.crop-handle{position:absolute;display:block;width:32px;height:32px;z-index:2;touch-action:none;cursor:nwse-resize}
+.crop-handle::after{content:'';display:block;width:15px;height:15px;position:absolute;left:8px;top:8px;border:2px solid #fff;border-radius:4px;background:#20b58f;box-shadow:0 1px 6px #001b}
+.crop-handle[data-handle=nw]{left:-16px;top:-16px;cursor:nwse-resize}
+.crop-handle[data-handle=ne]{right:-16px;top:-16px;cursor:nesw-resize}
+.crop-handle[data-handle=sw]{left:-16px;bottom:-16px;cursor:nesw-resize}
+.crop-handle[data-handle=se]{right:-16px;bottom:-16px;cursor:nwse-resize}
+.crop-edge{position:absolute;background:#dcfff3;border-radius:5px;z-index:1;touch-action:none;}
+.crop-edge[data-handle=n],.crop-edge[data-handle=s]{width:25px;height:9px;left:50%;transform:translateX(-50%);cursor:ns-resize}
+.crop-edge[data-handle=n]{top:-5px}.crop-edge[data-handle=s]{bottom:-5px}
+.crop-edge[data-handle=w],.crop-edge[data-handle=e]{height:25px;width:9px;top:50%;transform:translateY(-50%);cursor:ew-resize}
+.crop-edge[data-handle=w]{left:-5px}.crop-edge[data-handle=e]{right:-5px}
+.cropcontrols{position:static!important;display:flex;gap:9px;width:100%;z-index:8;margin:0;flex:none}
+.cropcontrols button{flex:1;background:#17283b;border:1px solid #a5bbc7;border-radius:9px;padding:11px}
+.cropcontrols button.ok{background:#14856a}
+.crop-help{color:#b9cce0;font-size:11px;text-align:center;margin:-4px 0 0}
+</style></head>
+<body><main class="app"><header class="top"><div class="details"><div id="modeLabel" class="mode">SORT · DEMO</div><button id="filename" class="name" title="Tap to rename">Travel_001.jpg ✎</button><div id="meta" class="meta">0.24 MB · Demonstration gallery</div></div></header><section id="canvas" class="canvas"><img id="media" class="media" alt="Current photo"><video id="video" class="media vid" controls playsinline style="display:none"></video><svg class="wedge" id="wedge" viewBox="0 0 100 100" preserveAspectRatio="none"></svg><div id="radial"></div><div id="center" class="center">🫆</div><div id="fingerprompt" class="fingerprompt">Hold 🫆 then drag in one of eight directions</div></section><div class="nav"><button class="thumb" id="prev">◀</button><button id="count" class="count"><b>1 / 3</b><small>tap to jump</small></button><button class="thumb" id="next">▶</button></div><div class="desc" id="tip">Hold center and drag to sort · Swipe picture left/right to browse</div><div class="tools" id="tools"><div class="tool-row" id="modeRow"><button class="accent" id="modeBtn">✏ Edit mode</button><button id="copy">📑 Copy OFF</button></div><div class="tool-row" id="actionRow"><button id="back">↰ Back</button><button id="undo">↶ Undo</button><button class="danger" id="del">🗑 Delete</button><button id="crop">✂ Crop</button><button id="setup">⚙ Setup</button></div></div><div id="banner" class="banner">Safe demo: sorting, copying and deleting only change this preview, never your device's files.</div><div class="bottom">Image Keysort Mobile · interactive browser prototype</div><input id="files" type="file" multiple accept="image/*,video/*"><input id="folder" type="file" webkitdirectory directory multiple accept="image/*,video/*"></main><div id="portal"></div>
+<script>
+(()=>{
+const $=s=>document.querySelector(s), DIRS=['N','NE','E','SE','S','SW','W','NW'], icons=['📁','🖼️','🎬','⭐','📌','🎵','🧠','🏃','❤️','🔖','🪄','🗂️'],colors=['#34d399','#60a5fa','#fbbf24','#fb7185','#c084fc','#2dd4bf','#f97316','#94a3b8'];
+const root=()=>({name:'Home',icon:'🫆',color:'#34d399',destination:null,locked:true,children:{}});
+const sample=(a,b,c,label)=>'data:image/svg+xml;charset=utf-8,'+encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 700"><defs><linearGradient id="g" x2="1" y2="1"><stop stop-color="${a}"/><stop offset="1" stop-color="${b}"/></linearGradient></defs><rect width="700" height="700" fill="url(#g)"/><circle cx="480" cy="240" r="180" fill="${c}" opacity=".28"/><circle cx="200" cy="490" r="240" fill="#fff" opacity=".07"/><rect x="70" y="275" width="560" height="155" rx="27" fill="#091422" opacity=".72"/><text x="350" y="345" fill="white" font-size="41" text-anchor="middle" font-family="sans-serif" font-weight="700">${label}</text><text x="350" y="390" fill="#b4ffed" font-size="18" text-anchor="middle" font-family="sans-serif">SWIPE TO ORGANIZE</text></svg>`);
+const demo=[{name:'Travel_001.jpg',size:242102,src:sample('#136a7b','#358e76','#ffd3a9','TRAVEL')},{name:'IG_screenshot_002.jpg',size:184322,src:sample('#813c67','#e67c71','#fff1aa','SCREENSHOT')},{name:'Saved_picture_003.jpg',size:321245,src:sample('#34488d','#9745aa','#a9eaff','SAVED IMAGE')}];
+let files=demo.map(x=>({...x})),index=0,tree=root(),path=[],mode='sort',opened=false,active=null,copyMode=false,undos=[],cropMode=false,rect={x:.1,y:.08,w:.8,h:.82},demoMode=true,origin=null;
+let snapshots={};try{snapshots=JSON.parse(localStorage.getItem('iks-presets')||'{}')}catch{};
+const node=()=>path.reduce((n,d)=>n?.children?.[d],tree)||tree, current=()=>files[index],cl=(n)=>JSON.parse(JSON.stringify(n));
+function modal(title,body,footer){$('#portal').innerHTML=`<div class="overlay"><div class="dialog"><h3>${title}</h3>${body}<footer>${footer||'<button class="mini" id="cancel">Close</button>'}</footer></div></div>`;const c=$('#cancel');if(c)c.onclick=close;$('.overlay').onclick=e=>{if(e.target.classList.contains('overlay'))close()};}function close(){$('#portal').innerHTML=''}function alertUser(msg){modal('Notice',`<p class="muted">${msg}</p>`)};
+function location(dir){let a=DIRS.indexOf(dir)*Math.PI/4,r=32;return {x:50+Math.sin(a)*r,y:50-Math.cos(a)*r};}
+function direction(dx,dy){const deg=(Math.atan2(dx,-dy)*180/Math.PI+360)%360;return DIRS[Math.round(deg/45)%8]}
+function title(s){return String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function status(s){$('#tip').textContent=s;}
+function render(){let c=current();$('#modeLabel').textContent=`${mode.toUpperCase()} · ${demoMode?'DEMO':'IMPORT PREVIEW'}`;$('#canvas').classList.toggle('edit-active',mode==='edit');$('#filename').textContent=(c?c.name:'No files')+' ✎';$('#meta').textContent=(c?(c.size/1048576).toFixed(2)+' MB':'—')+' · '+(demoMode?'Demonstration gallery':'Imported local previews');$('#modeBtn').textContent=mode==='sort'?'✏ Edit mode':'✓ Sort mode';$('#copy').textContent=copyMode?'📑 Copy ON':'📑 Copy OFF';$('#copy').classList.toggle('active',copyMode);$('#back').style.display=path.length?'':'none';$('#undo').style.opacity=undos.length?'1':'.45';$('#count').innerHTML=`<b>${files.length?index+1:0} / ${files.length}</b><small>tap to jump</small>`;
+ let src=c?.src||'';$('#media').style.display=c?.video?'none':'block';$('#video').style.display=c?.video?'block':'none';if(c?.video){if($('#video').src!==src)$('#video').src=src;}else $('#media').src=src;$('#prev').innerHTML=files[index-1]&&!files[index-1].video?`<img src="${files[index-1].src}">`:'◀';$('#next').innerHTML=files[index+1]&&!files[index+1].video?`<img src="${files[index+1].src}">`:'▶';
+ const visible=mode==='edit'?opened:opened||path.length>0;$('#fingerprompt').style.display=!cropMode&&mode==='sort'&&!path.length&&!opened?'':'none';$('#center').innerHTML=node().icon+(path.length?`<small>${title(node().name)}</small>`:'');$('#center').style.background=node().color;$('#center').style.opacity=(mode==='edit'||opened||path.length>0)?'1':'0';
+ $('#radial').innerHTML='';if(visible){for(let dir of DIRS){const n=node().children[dir];if(mode==='sort'&&!n)continue;const pos=location(dir),el=document.createElement('div');el.className='node';el.style.left=pos.x+'%';el.style.top=pos.y+'%';el.innerHTML=`<div class="circle ${n?'':'empty'}" style="${n?'background:'+n.color+'d9;':''}">${n?n.icon:'+'}</div><small>${n?title(n.name):''}</small>`;el.addEventListener('click',()=>act(dir));$('#radial').appendChild(el);}}
+ $('#wedge').innerHTML='';if(active&&node().children[active]){const i=DIRS.indexOf(active),a=(i-.5)*Math.PI/4,b=(i+.5)*Math.PI/4,point=(t)=>[50+70*Math.sin(t),50-70*Math.cos(t)],p=point(a),q=point(b);$('#wedge').innerHTML=`<path d="M 50 50 L ${p.join(' ')} A 70 70 0 0 1 ${q.join(' ')} Z" fill="${node().children[active].color}" fill-opacity=".50"/>`}
+ $('#crop').style.display=cropMode?'none':'';$('#radial').style.display=cropMode?'none':'';$('#center').style.display=cropMode?'none':'';$('#wedge').style.display=cropMode?'none':'';
+ if(!cropMode)$('#media').style.visibility='visible';
+ if(cropMode){
+   $('#cropframe')?.remove();$('#cropcontrols')?.remove();$('#cropHelp')?.remove();
+   const frame=document.createElement('div');frame.id='cropframe';frame.className='cropframe';
+   frame.innerHTML='<canvas id="cropSource" aria-label="Crop source preview"></canvas><div class="cropbox" id="cropbox">'+
+      ['nw','ne','sw','se'].map(h=>`<span class="crop-handle" data-handle="${h}"></span>`).join('')+
+      ['n','e','s','w'].map(h=>`<span class="crop-edge" data-handle="${h}"></span>`).join('')+'</div>';
+   $('#canvas').appendChild(frame);
+   const help=document.createElement('div');help.id='cropHelp';help.className='crop-help';help.textContent='Drag any corner or edge · Drag inside to move · Last rectangle is reused';
+   const controls=document.createElement('div');controls.id='cropcontrols';controls.className='cropcontrols';
+   controls.innerHTML='<button id="cropCancel">Cancel</button><button class="ok" id="cropConfirm">✓ Apply crop</button>';
+   $('#canvas').after(help,controls);
+   $('#cropCancel').onclick=()=>{cropMode=false;render()};$('#cropConfirm').onclick=cropApply;
+   positionCropFrame();cropGesture(frame);
+ }else{$('#cropframe')?.remove();$('#cropcontrols')?.remove();$('#cropHelp')?.remove()}
+
+}
+function browse(d){if(files.length){index=Math.max(0,Math.min(files.length-1,index+d));render();}}
+function act(dir){const n=node().children[dir];if(mode==='edit'){if(n)options(dir);else edit(dir);return}if(!n)return;if(Object.keys(n.children||{}).length){path.push(dir);opened=true;active=null;status('Sub-swipes · drag from center; swipe upward from bottom to go back');render();return;}if(!n.destination){status('Container without destination');return}perform('sort',n.destination)}
+function edit(dir){const old=node().children[dir],f=old?cl(old):{name:'',icon:'📁',color:colors[0],destination:null,locked:false,children:{}};
+ modal(old?'Modify swipe':'Create swipe',`<label>Label</label><input id="sName" value="${title(f.name)}" maxlength="30" placeholder="e.g. Tricks to learn"><label>Icon</label><div id="icons" class="palette">${icons.map(i=>`<button data-icon="${i}" class="${i===f.icon?'sel':''}">${i}</button>`).join('')}</div><label>Background color</label><div id="palette" class="palette">${colors.map(i=>`<button data-color="${i}" class="${i===f.color?'sel':''}" style="background:${i}"></button>`).join('')}</div><label>Direction</label><select id="sDir">${DIRS.map(d=>`<option value="${d}" ${d===dir?'selected':''}>${d}</option>`).join('')}</select><label>Destination (optional; browser demo uses virtual labels)</label><input id="sDest" value="${title(f.destination||'')}" placeholder="e.g. My pictures / Favorites"><label><input id="sLocked" type="checkbox" ${f.locked?'checked':''} style="width:auto"> Lock direction</label>`, `<button class="mini" id="cancel">Cancel</button><button class="mini accent" id="save">Confirm</button>`);
+ $('#icons').onclick=e=>{const k=e.target.closest('[data-icon]');if(!k)return;f.icon=k.dataset.icon;$('#icons').querySelectorAll('button').forEach(el=>el.classList.toggle('sel',el===k))};$('#palette').onclick=e=>{const k=e.target.closest('[data-color]');if(!k)return;f.color=k.dataset.color;$('#palette').querySelectorAll('button').forEach(el=>el.classList.toggle('sel',el===k))};$('#save').onclick=()=>{let name=$('#sName').value.trim(),dest=$('#sDest').value.trim()||null,to=$('#sDir').value;if(!name){$('#sName').focus();return}if(old?.locked&&to!==dir){alertUser('Unlock this swipe before moving it.');return}if(to!==dir&&node().children[to]){alertUser('Position already occupied.');return}f.name=name;f.destination=dest;f.locked=$('#sLocked').checked;if(dir!==to)delete node().children[dir];node().children[to]=f;close();render()};}
+function options(dir){const n=node().children[dir];modal(title(n.name),`<p class="muted">${n.destination?'Destination: '+title(n.destination):'Container (no destination)'}</p><div class="group"><button class="mini" id="modify">✏ Modify</button><button class="mini accent" id="nested">⊕ Add sub-swipes</button><button class="mini" id="remove">🗑 Delete</button></div>`);$('#modify').onclick=()=>{close();edit(dir)};$('#nested').onclick=()=>{path.push(dir);opened=true;close();status('Add swipes to this nested level');render()};$('#remove').onclick=()=>{modal('Delete swipe?',`<p class="muted">Remove “${title(n.name)}” and ALL nested destinations?</p>`, `<button class="mini" id="cancel">Cancel</button><button class="mini danger" id="confirm">Delete</button>`);$('#confirm').onclick=()=>{delete node().children[dir];close();render()}};}
+function perform(type,destination){const c=current();if(!c)return;undos.push({files:files.map(x=>({...x})),index,desc:`${type} ${c.name}`});if(type==='sort'&&copyMode){index=Math.min(files.length-1,index+1);status('Simulated COPY to '+destination);}else {files.splice(index,1);index=Math.max(0,Math.min(files.length-1,index));status(type==='delete'?'Simulated DELETE':'Simulated MOVE to '+destination)}path=[];opened=false;render()}
+function popUndo(){const u=undos.pop();if(!u)return;files=u.files;index=u.index;status('Undone: '+u.desc);render()}
+function back(){if(path.length){path.pop();opened=mode==='edit'||path.length>0;active=null;render()}}
+function updateMode(){mode=mode==='sort'?'edit':'sort';path=[];opened=mode==='edit';active=null;status(mode==='edit'?'Tap + to create a swipe or a configured node to modify it.':'Hold the central button to show destinations.');render()}
+function rename(){const c=current();if(!c)return;modal('Rename media',`<label>New filename</label><input id="newName" value="${title(c.name)}">`,`<button class="mini" id="cancel">Cancel</button><button class="mini accent" id="saveName">Rename</button>`);$('#saveName').onclick=()=>{const s=$('#newName').value.trim();if(!s)return;undos.push({files:files.map(x=>({...x})),index,desc:'rename'});c.name=s;close();render()}}
+function presetDialog(action){if(action==='save'){modal('Save swipe preset',`<label>Snapshot name</label><input id="presetName" placeholder="General / Dance / Games"><div class="group"><button class="mini accent" id="savePreset">💾 Save current tree</button></div>`);$('#savePreset').onclick=()=>{const name=$('#presetName').value.trim();if(!name)return;snapshots[name]=cl(tree);try{localStorage.setItem('iks-presets',JSON.stringify(snapshots))}catch{}close();status('Preset saved: '+name)};return;}modal('Load swipe preset',`<div id="presetList">${Object.keys(snapshots).map(n=>`<div class="item"><span>${title(n)}</span><button class="mini" data-load="${title(n)}">Load</button></div>`).join('')||'<p class="muted">No saved presets yet.</p>'}</div>`);$('#presetList').onclick=e=>{const btn=e.target.closest('[data-load]');if(!btn)return;tree=cl(snapshots[btn.dataset.load]);path=[];opened=mode==='edit';close();render()}}
+function settings(){modal('Setup',`<p class="muted">This browser prototype demonstrates gestures and layouts. It cannot move files into actual Android directories. For real filesystem operations, use the React Native project.</p><div class="group"><button class="mini" id="goEdit">Edit swipe tree</button><button class="mini" id="choose">📂 Open source directory</button><button class="mini" id="chooseFiles">📥 Import individual media files</button><button class="mini" id="savePresets">💾 Save swipe preset</button><button class="mini" id="loadPresets">📥 Load swipe preset</button><button class="mini" id="resetDemo">Reset demo images</button></div>`);$('#goEdit').onclick=()=>{close();mode='edit';path=[];opened=true;render()};$('#choose').onclick=()=>{close();$('#folder').click()};$('#chooseFiles').onclick=()=>{close();$('#files').click()};$('#savePresets').onclick=()=>{close();presetDialog('save')};$('#loadPresets').onclick=()=>{close();presetDialog('load')};$('#resetDemo').onclick=()=>{close();files=demo.map(x=>({...x}));index=0;demoMode=true;undos=[];render()}}
+// The preview and output crop use precisely the SAME decoded pixel canvas.
+// This avoids orientation, object-fit and EXIF differences between two decoders.
+function cropPixelsBrowser(r,w,h){
+ const clamp=(v,a,b)=>Math.min(b,Math.max(a,v));
+ const x0=clamp(Math.round(r.x*w),0,w-1),y0=clamp(Math.round(r.y*h),0,h-1);
+ const x1=clamp(Math.round((r.x+r.w)*w),x0+1,w);
+ const y1=clamp(Math.round((r.y+r.h)*h),y0+1,h);
+ return {x:x0,y:y0,w:x1-x0,h:y1-y0};
+}
+function cropApply(){
+ const c=current(),source=$('#cropSource');
+ if(!c||c.video||!source||!source.width||!source.height){alertUser('Crop preview is not ready.');return;}
+ try{
+   const b=cropPixelsBrowser(rect,source.width,source.height),out=document.createElement('canvas');
+   out.width=b.w;out.height=b.h;
+   out.getContext('2d').drawImage(source,b.x,b.y,b.w,b.h,0,0,b.w,b.h);
+   const format=/\.png$/i.test(c.name)?'image/png':'image/jpeg';
+   const output=out.toDataURL(format,format==='image/jpeg'?.95:undefined);
+   undos.push({files:files.map(x=>({...x})),index,desc:'crop'});
+   c.src=output;c.size=Math.ceil(output.length*.75);
+   cropMode=false;status(`Crop applied at source pixel ${b.x}, ${b.y} · Undo available`);render();
+ }catch(e){alertUser('Cropping failed: '+e.message);}
+}
+function positionCropFrame(){
+ const frame=$('#cropframe'),img=$('#media'),canvas=$('#canvas'),source=$('#cropSource');
+ if(!frame||!source||!img?.naturalWidth||!img?.naturalHeight)return;
+ const W=canvas.clientWidth,H=canvas.clientHeight;
+ // First paint the exact bitmap used later in drawImage, then show THAT as
+ // the preview (instead of another image view or image decoder).
+ const w0=img.naturalWidth,h0=img.naturalHeight;
+ if(source.width!==w0||source.height!==h0){source.width=w0;source.height=h0;}
+ const ctx=source.getContext('2d');ctx.clearRect(0,0,w0,h0);ctx.drawImage(img,0,0,w0,h0);
+ const scale=Math.min(W/w0,H/h0),w=w0*scale,h=h0*scale;
+ Object.assign(frame.style,{left:(W-w)/2+'px',top:(H-h)/2+'px',width:w+'px',height:h+'px'});
+ // Hide the original image during cropping; the preview canvas is identical
+ // to the data from which Apply produces its result.
+ img.style.visibility='hidden';
+ paintCrop();
+}
+function paintCrop(){const el=$('#cropbox');if(!el)return;
+ Object.assign(el.style,{left:(rect.x*100)+'%',top:(rect.y*100)+'%',width:(rect.w*100)+'%',height:(rect.h*100)+'%'});
+}
+function cropGesture(frame){
+ let start=null;
+ const clamp=(n,low,high)=>Math.max(low,Math.min(high,n)), min=.04;
+ frame.onpointerdown=e=>{
+   const handle=e.target.closest('[data-handle]')?.dataset.handle || (e.target.closest('#cropbox')?'move':null);
+   if(!handle)return;
+   e.preventDefault();e.stopPropagation();frame.setPointerCapture(e.pointerId);
+   start={x:e.clientX,y:e.clientY,rect:{...rect},handle};
+ };
+ frame.onpointermove=e=>{
+   if(!start)return;
+   e.preventDefault();e.stopPropagation();
+   const b=frame.getBoundingClientRect(),dx=(e.clientX-start.x)/b.width,dy=(e.clientY-start.y)/b.height;
+   const r=start.rect,h=start.handle;
+   if(h==='move'){
+      rect={...r,x:clamp(r.x+dx,0,1-r.w),y:clamp(r.y+dy,0,1-r.h)};
+   }else{
+      let left=r.x,right=r.x+r.w,top=r.y,bottom=r.y+r.h;
+      if(h.includes('w'))left=clamp(r.x+dx,0,right-min);
+      if(h.includes('e'))right=clamp(r.x+r.w+dx,left+min,1);
+      if(h.includes('n'))top=clamp(r.y+dy,0,bottom-min);
+      if(h.includes('s'))bottom=clamp(r.y+r.h+dy,top+min,1);
+      rect={x:left,y:top,w:right-left,h:bottom-top};
+   }
+   paintCrop();
+ };
+ frame.onpointerup=frame.onpointercancel=()=>{start=null;};
+}
+$('#media').addEventListener('load',()=>{if(cropMode)positionCropFrame()});
+window.addEventListener('resize',()=>{if(cropMode)positionCropFrame()});
+$('#modeBtn').onclick=updateMode;$('#filename').onclick=rename;$('#setup').onclick=settings;$('#prev').onclick=()=>browse(-1);$('#next').onclick=()=>browse(1);$('#undo').onclick=popUndo;$('#back').onclick=back;$('#crop').onclick=()=>{if(!current()||current().video)return alertUser('Select an image first.');cropMode=true;opened=false;render()};$('#copy').onclick=()=>{copyMode=!copyMode;render()};$('#del').onclick=()=>{if(!current())return;modal('Delete file?',`<p class="muted">Remove “${title(current().name)}” from this demo session? Undo restores it.</p>`,`<button class="mini" id="cancel">Cancel</button><button class="mini danger" id="confirmDelete">Delete</button>`);$('#confirmDelete').onclick=()=>{close();perform('delete','')}};
+$('#count').onclick=()=>{modal('Jump to file',`<label>Number (1–${files.length})</label><input id="jumpTo" type="number" inputmode="numeric" min="1" max="${files.length}" value="${index+1}">`,`<button class="mini" id="cancel">Cancel</button><button class="mini accent" id="go">Go</button>`);$('#go').onclick=()=>{let n=Number($('#jumpTo').value);if(n<1||n>files.length)return;index=n-1;close();render()}};
+function importFiles(e){const fs=Array.from(e.target.files||[]).filter(f=>f.type.startsWith('image/')||f.type.startsWith('video/'));if(!fs.length)return;files=fs.map(f=>({name:f.name,size:f.size,src:URL.createObjectURL(f),video:f.type.startsWith('video/')}));index=0;undos=[];demoMode=false;status(`${files.length} media previews imported — sorting is simulated, no device files changed.`);render()};$('#files').onchange=importFiles;$('#folder').onchange=importFiles;
+let gesture=null;$('#center').onpointerdown=e=>{if(cropMode)return;e.preventDefault();e.stopPropagation();e.currentTarget.setPointerCapture(e.pointerId);gesture={x:e.clientX,y:e.clientY};opened=true;active=null;render()};$('#center').onpointermove=e=>{if(!gesture)return;let dx=e.clientX-gesture.x,dy=e.clientY-gesture.y;active=Math.hypot(dx,dy)>23?direction(dx,dy):null;render()};$('#center').onpointerup=e=>{if(!gesture)return;let dx=e.clientX-gesture.x,dy=e.clientY-gesture.y;gesture=null;if(Math.hypot(dx,dy)>43){act(direction(dx,dy));}else if(mode==='sort'&&path.length&&node().destination){perform('sort',node().destination)}else if(mode==='edit'){opened=!opened;}if(mode==='sort'&&!path.length)opened=false;active=null;render()};
+let drag=null;$('#canvas').onpointerdown=e=>{if(cropMode||e.target.closest('.center,.node'))return;drag={x:e.clientX,y:e.clientY};};$('#canvas').onpointerup=e=>{if(!drag||cropMode)return;let dx=e.clientX-drag.x,dy=e.clientY-drag.y,rect=$('#canvas').getBoundingClientRect();if(mode==='edit'&&path.length&&dx < -60)back();else if(mode==='sort'&&path.length&&dy < -65 && drag.y>rect.top+rect.height*.6)back();else if(Math.abs(dx)>55&&Math.abs(dx)>Math.abs(dy)*1.2)browse(dx<0?1:-1);drag=null;};
+render();
+})();
+</script></body></html>

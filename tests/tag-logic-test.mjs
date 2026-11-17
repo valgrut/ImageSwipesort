@@ -1,0 +1,23 @@
+import assert from 'node:assert/strict';
+import {splitFileName,normalizeTag,hasTag,toggleTag} from '../src/tags.js';
+assert.equal(toggleTag('My super picture.jpg','[Pole]'),'My super picture [Pole].jpg');
+assert.equal(toggleTag('My super picture [Pole].jpg','[Pole]'),'My super picture.jpg');
+assert.equal(toggleTag('foo.bar.mp4','X and Y'),'foo.bar X and Y.mp4');
+assert.equal(toggleTag('foo.bar X and Y.mp4','X and Y'),'foo.bar.mp4');
+assert.equal(toggleTag('photo.jpg','TAG123'),'photo TAG123.jpg');
+assert.equal(toggleTag('photo TAG123.jpg','TAG123'),'photo.jpg');
+assert.equal(toggleTag('photo TAG123.jpg','[Pole]'),'photo TAG123 [Pole].jpg');
+assert.equal(toggleTag('photo TAG123 [Pole].jpg','TAG123'),'photo [Pole].jpg');
+assert.equal(toggleTag('photo [Pole].jpg','[Pole]'),'photo.jpg');
+assert.equal(toggleTag('東京の写真.png','🎬'),'東京の写真 🎬.png');
+assert.equal(toggleTag('abc [Pole] next.jpg','[Pole]'),'abc next.jpg');
+assert.equal(toggleTag('a [Pole] [Pole].png','[Pole]'),'a.png');
+assert.equal(toggleTag('photo [Pole].jpeg','[Pole]'),'photo.jpeg');
+assert.equal(toggleTag('example.jpg','jpg'),'example jpg.jpg'); // extension ignored
+assert.equal(hasTag('example.jpg','jpg'),false);
+assert.equal(hasTag('example [Pole].jpg','[Pole]'),true);
+assert.deepEqual(splitFileName('one.two.mp4'),{stem:'one.two',ext:'.mp4'});
+assert.equal(normalizeTag('  [Pole]  '),'[Pole]');
+for(const bad of ['', '   ', 'a/b', 'a\\b','a\nb']) assert.throws(()=>normalizeTag(bad));
+assert.equal(toggleTag('picture.jpg','Not present'),'picture Not present.jpg');
+console.log('PASS: tag logic, literal matching, add/remove, extension, Unicode, and validation');

@@ -1,0 +1,18 @@
+{
+  "expo": {
+    "name": "Image Keysort Mobile",
+    "slug": "imagekeysort-mobile",
+    "scheme": "imagekeysort",
+    "version": "0.1.9",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "android": {
+      "package": "dev.imagekeysort.mobile"
+    },
+    "plugins": [
+      "expo-file-system",
+      "expo-video"
+    ],
+    "newArchEnabled": true
+  }
+}
