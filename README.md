@@ -1,3 +1,19 @@
+## v23 — Repeat last swipe destination
+
+In Sort mode, use the large **↻ Repeat move / Repeat copy** button in the toolbar to apply the last successfully swiped destination to the current file. The button respects the current Copy mode, displays the destination folder name and shows the full path when held. It is disabled if the prior swipe is no longer configured or accessible. See `CHANGELOG-v23.md`.
+
+> **v21:** Fast Move Undo no longer rescans the entire source folder; see [CHANGELOG-v21.md](CHANGELOG-v21.md).
+
+# Image Keysort Mobile v18 — crop rollback
+
+This version targets the black/empty Crop editor regression reported in v15–v17. It restores the early v5 crop layout and image-frame geometry, keeps the v16 movable-corner gesture implementation, and keeps the v17 safe Android backup/replacement/Undo logic. The editor now shows the original gallery image and retains an independently normalized temporary image for crop export. See `CHANGELOG-v18.md`.
+
+**Important:** This change is checked with source and simulated tests, but the cropped image has not yet been verified on a physical Android device. Please test with a disposable screenshot before editing valuable files.
+
+To upgrade: extract the archive, run `npm install` to synchronize your `package-lock.json`, then `eas build -p android --profile preview`. Install the APK over the previous version (do not uninstall or clear data if you have backup media stored in the app).
+
+---
+
 ## v16: Android crop-editor repair
 
 The v15 Android crop screen could display a black preview while its corners
@@ -127,7 +143,7 @@ Open `browser-prototype.html` in a browser (or host it as a static webpage). It 
 - **Nested transitions** are currently basic fade-and-scale rather than the requested directional slide/push choreography.
 - Browser demo is simulated. Native APK is not bundled.
 - `Undo` for a move depends on the destination still being accessible; for crop it depends on the preserved original backup. Removing or replacing files outside the app can invalidate undo.
-- Deleted files are **moved to the app's private recycle bin** for undo, rather than permanently erased. You can empty it from Setup; uninstalling the app also clears app-private files. Crop backups consume storage and can be cleared in Setup.
+- **Deletion (v22):** Android attempts a fast, reversible SAF move into a hidden `.imagekeysort-trash-…` folder **inside the selected source directory**. This keeps the video on the same storage provider, without copying its bytes. Undo moves the document back. If the provider does not support this, the app uses the older, slower app-private recycle bin. The hidden folders survive an app uninstall; use **Setup → Empty app recycle bin** to permanently remove their contents while the app still has directory access. Crop backups remain app-private and can be cleared separately.
 - Directory listing is nonrecursive. Folders with thousands of files may need thumbnail prefetching and pagination to keep scrolling and loading smooth.
 - Some devices need Expo development builds rather than Expo Go for a robust release. An optimized standalone production version should consider a dedicated Kotlin Android SAF module for high-performance cross-volume moves and permissions.
 
@@ -190,3 +206,33 @@ See [CHANGELOG-v14.md](CHANGELOG-v14.md).
 **Tagging / manual rename:** uses a new Android local Expo module and Android `DocumentsContract.renameDocument()`; this changes document names through the provider rather than copying their contents. Tag addition, removal, and Undo use the returned URI. Not all Android document providers support renaming; unsupported providers produce an error without deleting/copying the file.
 
 The custom native module requires rebuilding a **standalone APK** (Expo Go cannot run it). Keep the same package ID/signature and install over the existing build to preserve private data. Before submitting EAS Build, run `npm install` followed by `npm ci --include=dev` to sync/verify the lock file.
+
+## v17 crop preview and backup recovery
+
+Crop now uses the same image URI and `expo-image` renderer as the gallery (with a byte-for-byte cached fallback), instead of displaying a generated PNG. The four-corner selector remains. Applying a crop uses a separate cached copy, and saving the result uses an Android SAF-safe transaction with an original-image backup. Setup → Recover original images from crops exports a backup to a chosen folder without deleting it.
+
+Always test on a disposable image when upgrading; these changes have not been verified on a physical Android device.
+
+
+## v19 crop editor
+
+See [CHANGELOG-v19.md](CHANGELOG-v19.md). Crop now overlays the **existing gallery image** rather than mounting a second image renderer. The native Android view is never replaced when Crop opens.
+
+
+## v20 fast native Move
+
+Moving between Android SAF folders uses a native `DocumentsContract.moveDocument()` method when the provider supports it, avoiding video-byte copying. Unsupported providers fall back to verified copy/delete and show a one-time warning. Native undo moves files back the same way. See `CHANGELOG-v20.md`. This requires an APK rebuild and real-device verification.
+
+
+## v22 — Fast reversible Delete
+
+See `CHANGELOG-v22.md`. On Android, deleting from a selected source folder now uses native `DocumentsContract.moveDocument()` to move into an app-owned hidden recycle directory inside the **same source folder**, avoiding a full video copy. Undo moves the same document back. Both remove/restore the item from the in-memory gallery rather than rescanning the whole folder. The recycle bin is not automatically cleared; **Setup → Empty app recycle bin** now clears both the old private bin and fast same-provider bins tracked for previously selected source folders.
+
+The hidden folders live alongside your media, not in app-private storage. **Do not uninstall or clear app data until you have restored important deleted files or emptied the recycle bin intentionally.** If the app is uninstalled, the hidden recycle folders may remain in your source directories and can be recovered manually using a file manager that shows hidden files. An unsupported storage provider falls back to the older slower private recycle bin.
+
+The Kotlin native module changed; build and install a new APK with the same package ID/signing credentials. Validate Delete and Undo using disposable files on your phone; simulated JS tests cannot verify all SAF provider behaviors.
+
+
+## v24 — Back button under the preview
+
+In Sort mode, when you enter a nested swipe menu, a prominent `← Back to <parent>` button is shown directly beneath the media preview. The bottom toolbar has no Back button in Sort mode; it remains available there in Edit mode. See `CHANGELOG-v24.md`.

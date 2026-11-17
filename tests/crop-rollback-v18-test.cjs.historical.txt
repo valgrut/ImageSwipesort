@@ -1,0 +1,28 @@
+const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const path=require('node:path');
+const ts=require('/opt/nvm/versions/node/v22.16.0/lib/node_modules/typescript/lib/typescript.js');
+const root=path.resolve(__dirname,'..');
+for(const name of ['App.js','src/CropPane.jsx','src/cropGesture.js']){
+  const source=fs.readFileSync(path.join(root,name),'utf8');
+  const result=ts.transpileModule(source,{
+    fileName:name,reportDiagnostics:true,
+    compilerOptions:{jsx:ts.JsxEmit.React,target:ts.ScriptTarget.ES2022,allowJs:true}
+  });
+  assert.equal(result.diagnostics.length,0,name+' failed syntax check');
+}
+const app=fs.readFileSync(path.join(root,'App.js'),'utf8');
+const pane=fs.readFileSync(path.join(root,'src/CropPane.jsx'),'utf8');
+assert(app.includes('uri:current.uri,                // Same exact URI as the working gallery preview'),'uses original gallery URI for preview');
+assert(app.includes('inputUri:input.uri') && app.includes('normalizedUri:normalized.uri'),'maintains original staging and orientation-normalized crop source');
+assert(app.includes('ImageManipulator.manipulateAsync(input.uri,[],{format:ImageManipulator.SaveFormat.PNG})'),'uses documented normalization API');
+assert(app.includes('cropPreview.normalizedUri,[{crop}]'),'applies crop to same decoder-normalized image');
+assert(!app.includes('ImageManipulator.ImageManipulator.manipulate('),'does not use newer native manip context with black preview problem');
+assert(app.includes('replaceWithCrop(current,processed.uri,sourceUri)'),'saves through SAF-safe replacement and Undo backup');
+assert(app.includes('imageSize={cropPreview.width&&cropPreview.height?{w:cropPreview.width,h:cropPreview.height}:null}'),'provides image geometry before onLoad');
+assert(pane.includes("from 'expo-image'"),'uses same image renderer as gallery');
+assert(pane.includes('contentFit="fill"') && pane.includes('style={StyleSheet.absoluteFillObject}'),'image fills letterbox-aware frame');
+assert(pane.includes('onResponderGrant={grant}')&&pane.includes('onResponderMove={move}'),'preserves proven v16 direct responder');
+assert(pane.includes('collapsable={false}') && pane.includes('pointerEvents="none"'),'touch handling stays attached to image-sized view');
+assert(pane.includes('onError={failed}') && pane.includes('Image preview could not be loaded'),'exposes image load errors');
+console.log('PASS v18 crop regression checks: source, preview, geometry, touch, apply, fallback, safe save');

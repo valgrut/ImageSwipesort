@@ -60,7 +60,7 @@ function env(){
  const k=fs.readFileSync(path.join(__dirname,'../modules/iks-document-rename/android/src/main/java/expo/modules/iksdocumentrename/IksDocumentRenameModule.kt'),'utf8');
  assert.match(k,/DocumentsContract\.renameDocument/);
  assert.match(k,/AsyncFunction\("renameDocument"\)/);
- assert(!k.includes('deleteDocument('),'native rename must not delete documents');
+ assert(!k.slice(k.indexOf('AsyncFunction("renameDocument")')).includes('deleteDocument('),'native rename must not delete documents');
  const app=fs.readFileSync(path.join(__dirname,'../App.js'),'utf8');
  assert.match(app,/await renameMedia\(current,newName,sourceUri\)/);
  assert.match(app,/await renameMedia\(current,s,sourceUri\)/);

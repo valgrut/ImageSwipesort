@@ -1,0 +1,53 @@
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+const vm = require('node:vm');
+const root = path.join(__dirname, '..');
+const source = fs.readFileSync(path.join(root, 'src/repeatSort.js'), 'utf8')
+  .replace(/^export /gm, '') +
+  '\nmodule.exports={findSwipeById,makeRepeatSelection,repeatSwipeIsValid,repeatDestinationName};';
+const context = {module:{exports:{}},Set,Object,Error};
+vm.runInNewContext(source,context);
+const {findSwipeById,makeRepeatSelection,repeatSwipeIsValid,repeatDestinationName}=context.module.exports;
+const sourceUri='content://saf/tree/primary%3APictures%2FScreenshots';
+const to='content://saf/tree/primary%3APictures%2FPole%20Tricks';
+const another='content://saf/tree/primary%3APictures%2FClips';
+const leaf={id:'nested-sw',name:'Pole tricks',destination:to,children:{}};
+const parent={id:'parent',name:'Exercise',destination:another,children:{NE:leaf}};
+const tree={id:'root',children:{N:parent}};
+const last=makeRepeatSelection(leaf,sourceUri);
+assert.equal(last.destination,to);
+assert.equal(last.nodeId,leaf.id);
+assert.equal(findSwipeById(tree,'nested-sw'),leaf,'nested swipe must be found');
+assert.equal(repeatSwipeIsValid(last,tree,sourceUri,new Set()),true);
+assert.equal(repeatSwipeIsValid(last,tree,'another source',new Set()),false,'do not reuse target across source changes');
+assert.equal(repeatSwipeIsValid(last,tree,sourceUri,new Set(['nested-sw'])),false,'disabled destination cannot repeat');
+assert.equal(repeatSwipeIsValid(last,{id:'root',children:{}},sourceUri),false,'deleted swipe cannot repeat');
+assert.equal(repeatSwipeIsValid(last,{id:'root',children:{N:{...leaf,destination:another}}},sourceUri),false,'reassigned swipe cannot repeat stale target');
+assert.equal(repeatSwipeIsValid(null,tree,sourceUri),false);
+assert.equal(repeatSwipeIsValid({nodeId:leaf.id,destination:'',sourceUri},tree,sourceUri),false);
+assert.equal(repeatDestinationName(last,uri=>uri===to?'Internal storage/Pictures/Pole Tricks':'error'),'Pole Tricks');
+const center=makeRepeatSelection(parent,sourceUri);
+assert.equal(repeatSwipeIsValid(center,tree,sourceUri),true,'center destination inside nested menu is supported');
+const app=fs.readFileSync(path.join(root,'App.js'),'utf8');
+assert.match(app,/if\(selectedSwipe\)setLastSwipe\(makeRepeatSelection\(selectedSwipe,sourceUri\)\)/);
+assert.match(app,/sortCurrent\(lastSwipe\.destination\)/,'repeater does not accidentally overwrite the last chosen swipe');
+assert.match(app,/transfer\(current,target,copyOnly,sourceUri\)/,'repeat uses the same transfer method and the current Copy toggle');
+assert.match(app,/sortCurrent\(node\.destination,node\)/,'leaf sorts remember their node');
+assert.match(app,/sortCurrent\(state\.currentNode\.destination,state\.currentNode\)/,'container center sorts remember their node');
+assert.match(app,/mode==='sort' && !!current && !busy && repeatValid/);
+assert.match(app,/setLastSwipe\(null\);setFiles\(entries\)/);
+assert.match(app,/setLastSwipe\(null\);setPresets\(imported\.presets\)/);
+assert.match(app,/lastSwipe,presets,tags,history/,'last swipe is persisted in saved state');
+assert.match(app,/onPress=\{repeatLastDestination\}/);
+assert.match(app,/disabled=\{!repeatReady\}/);
+assert.match(app,/↻ Repeat \{copyOnly\?'copy':'move'\}/);
+const toolbar=app.slice(app.indexOf('<View style={styles.toolbar}>'),app.indexOf('{showUndoPreview&&'));
+assert.match(toolbar,/<RepeatButton/);
+assert.equal((toolbar.match(/<View style=\{styles.toolbarRow\}>/g)||[]).length,2,'keep the two original toolbar rows');
+// Layout weights: on a narrow Android phone with 280 dp total width, the
+// two small mode buttons keep ~68 dp each and the repeat button ~113 dp.
+const usableWidth=280-20-12;
+const repeatWidth=usableWidth*1.7/3.7;
+assert(repeatWidth>110,'Repeat must be visibly larger on narrow screens');
+console.log('PASS v23: nested targets, invalidation, source isolation, current mode reuse, persistence, two-row toolbar and prominent button');

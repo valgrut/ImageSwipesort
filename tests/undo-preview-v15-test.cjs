@@ -51,9 +51,9 @@ const corrected=historyAfterTagRename([oldCrop],{name:'a.jpg',uri:'content://old
 assert.equal(corrected[0].sourceUri,'content://new','upgrade older stored crop history folder reference');
 assert.equal(corrected[0].sourceDirUri,source);
 const app=fs.readFileSync(path.join(root,'App.js'),'utf8');
-assert.equal((app.match(/ImageManipulator\.ImageManipulator\.manipulate\(/g)||[]).length,1,'use SDK 58 contextual API for final crop');
-assert(app.includes('ImageManipulator.manipulateAsync('),'normalization uses the documented SDK 58 legacy function to create a stable preview');
-assert(!/(?<!\.)ImageManipulator\.manipulate\(/.test(app),'invalid package-level call removed');
+assert.equal((app.match(/ImageManipulator\.manipulateAsync\(/g)||[]).length,2,'use SDK 58 supported legacy API for decode and final crop');
+assert(app.includes('uri:current.uri,')&&app.includes('inputUri:input.uri'),'crop renders original gallery image with a separate staged decoder input');
+assert(!app.includes('ImageManipulator.ImageManipulator.manipulate('),'do not use contextual API responsible for regression');
 assert(app.includes("setHistory(h=>historyAfterTagRename"),'tagging must NOT push history');
 assert(app.includes('sourceDirUri:sourceUri'),'crop/ cut must preserve file URI in undo');
 assert(app.includes('delayLongPress={450}'));

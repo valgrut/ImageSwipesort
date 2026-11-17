@@ -3,7 +3,7 @@
     "name": "Image Keysort Mobile",
     "slug": "imagekeysort-mobile",
     "scheme": "imagekeysort",
-    "version": "0.1.9",
+    "version": "0.1.23",
     "orientation": "portrait",
     "userInterfaceStyle": "dark",
     "android": {

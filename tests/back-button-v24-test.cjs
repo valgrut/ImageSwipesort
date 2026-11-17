@@ -1,0 +1,16 @@
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+const app = fs.readFileSync(path.join(__dirname, '../App.js'), 'utf8');
+const area = app.slice(app.indexOf('{/* Keep the exact existing gallery image component'), app.indexOf('{showUndoPreview&&'));
+const imageEnd = area.indexOf('</View>\n    {/* Sort submenus need');
+const back = area.indexOf('style={[styles.subSwipeBack,{width:square}]}');
+const nav = area.indexOf('<View style={styles.navRow}>');
+const toolbar = area.indexOf('<View style={styles.toolbar}>');
+assert(imageEnd >= 0 && back>imageEnd && back<nav && nav<toolbar, 'Back is directly below the preview, above navigation and tools');
+assert.match(area,/!cropMode && mode==='sort' && path\.length>0 &&[\s\S]*?onPress=\{goBack\}/, 'Only show in nested Sort mode and use existing navigation');
+assert.match(area,/nodeAt\(tree,path\.slice\(0,-1\)\)\?\.name/, 'Show parent swipe name');
+assert.match(area,/\{mode==='edit'&&path\.length>0&&<LabelButton label="↰ Back"/, 'Edit mode retains toolbar Back');
+assert.doesNotMatch(area,/\{path\.length>0&&<LabelButton label="↰ Back"/, 'Sort toolbar Back removed');
+assert.match(app,/subSwipeBack:\{[^}]*minHeight:44/,'large tap target');
+console.log('PASS v24: Back is clearly below preview only in nested Sort mode; Edit navigation preserved');

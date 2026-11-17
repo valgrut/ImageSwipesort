@@ -1,6 +1,6 @@
 import { Directory, File, Paths } from 'expo-file-system';
 import { isMedia } from './model';
-import {renameAndroidDocument} from './nativeRename';
+import {renameAndroidDocument,moveAndroidDocument,moveAndroidDocumentToRecycle,emptyAndroidRecycle} from './nativeRename';
 
 // Android SAF's chosen tree URIs are backed by native ContentResolver.
 // Always use the actual File URIs returned by Directory.list(), not a
@@ -60,8 +60,25 @@ async function copyVerifiedToDirectory(source, directory, name) {
   return copied;
 }
 
-// For a move, copy first and only remove the source after verification.
-export async function transfer(entry, destinationUri, copyOnly) {
+// Prefer Android's native SAF document move: it avoids copying all media
+// bytes, repeated destination scans, and extra storage writes. Use the
+// verified copy/delete path ONLY when the provider explicitly says native
+// move is unsupported (before any actual move was attempted).
+export async function transfer(entry, destinationUri, copyOnly, sourceDirectoryUri=null) {
+  const started=Date.now();
+  if (!copyOnly && sourceDirectoryUri && entry.uri?.startsWith('content://') && destinationUri?.startsWith('content://')) {
+    try {
+      const movedUri=await moveAndroidDocument(entry.uri,sourceDirectoryUri,destinationUri);
+      return {type:'move',strategy:'native',name:entry.name,size:entry.size,video:entry.video,fromUri:entry.uri,
+        fromDirUri:sourceDirectoryUri,toUri:movedUri,toDirUri:destinationUri,
+        durationMs:Date.now()-started};
+    }catch(e){
+      // Do not retry with copy/delete if the native call might already have
+      // moved the document. Only a definitive preflight unsupported result
+      // may safely use the slower method.
+      if(!String(e?.message||e).includes('IKS_NATIVE_MOVE_UNSUPPORTED'))throw e;
+    }
+  }
   const source = new File(entry.uri);
   const destDir = new Directory(destinationUri);
   const copied = await copyVerifiedToDirectory(source, destDir, entry.name);
@@ -71,18 +88,47 @@ export async function transfer(entry, destinationUri, copyOnly) {
     try { source.delete(); }
     catch(e) { warning=`Copy succeeded, but original could not be removed: ${e.message}`; moved=false; }
   }
-  return {type:moved?'move':'copy', warning, name:entry.name, fromUri:entry.uri, toUri:copied.uri, toDirUri:destinationUri};
+  const method=copyOnly?'copy':moved?'copy-delete':'copy-with-original-kept';
+  if(!copyOnly && moved && sourceDirectoryUri)
+    warning='This folder provider does not support fast native Move; used slower verified copy/delete.';
+  return {type:moved?'move':'copy',strategy:method,warning,name:entry.name,size:entry.size,video:entry.video,
+    fromUri:entry.uri,fromDirUri:sourceDirectoryUri,toUri:copied.uri,toDirUri:destinationUri,
+    durationMs:Date.now()-started};
 }
-export async function softDelete(entry) {
+// Reversible delete on Android: move within the same SAF provider instead of
+// copying the whole video into app-private storage. The hidden directory is
+// owned by this app (random suffix) and tracked in saved app state.
+// Older app-private backups remain supported for existing Undo history.
+export async function softDelete(entry, sourceDirectoryUri=null, existingTrashUri=null) {
+  const started=Date.now();
+  if(sourceDirectoryUri && entry.uri?.startsWith('content://') && sourceDirectoryUri.startsWith('content://')) {
+    const folderName='.imagekeysort-trash-'+Math.random().toString(36).slice(2,14)+Date.now().toString(36);
+    try {
+      const result=await moveAndroidDocumentToRecycle(entry.uri,sourceDirectoryUri,existingTrashUri,folderName);
+      return {type:'delete',strategy:'native-trash',name:entry.name,size:entry.size,video:entry.video,
+        fromUri:entry.uri,fromDirUri:sourceDirectoryUri,toUri:result.movedUri,toDirUri:result.trashUri,recycleRootUri:result.recycleRootUri,
+        durationMs:Date.now()-started};
+    } catch(e) {
+      // Only definitive preflight unsupported conditions can fall back to a
+      // full copy. Anything after a possible move must be surfaced verbatim.
+      if(!String(e?.message||e).includes('IKS_NATIVE_TRASH_UNSUPPORTED'))throw e;
+    }
+  }
   const source = new File(entry.uri);
   const backup = new File(privateFolder('recycle-bin'), uniquePrivateName(entry.name));
   await source.move(backup);
-  return { type:'delete', name:entry.name, fromUri:entry.uri, toUri:backup.uri };
+  return {type:'delete',strategy:'private-bin',name:entry.name,size:entry.size,video:entry.video,
+    fromUri:entry.uri,fromDirUri:sourceDirectoryUri,toUri:backup.uri,durationMs:Date.now()-started,
+    warning:'This storage provider cannot move documents into a same-provider recycle folder, so deletion required copying a backup.'};
 }
-export function emptyTrash() {
+export async function emptyTrash(fastTrashUris=[]) {
+  // Clear only app-owned hidden folders. Preserve these folders themselves so
+  // source-to-recycle moves can reuse them after Empty.
+  let count=0;
+  for(const uri of new Set(fastTrashUris.filter(Boolean)))count+=await emptyAndroidRecycle(uri);
   const dir=privateFolder('recycle-bin');
   const files=dir.list(); files.forEach(f=>f.delete());
-  return files.length;
+  return count+files.length;
 }
 // Rename the existing Android document through DocumentsContract rather than
 // copying its bytes or calling Expo File.rename(content://).
@@ -113,14 +159,75 @@ export async function renameMedia(entry, newName, sourceDirectoryUri) {
   return {type:'rename',beforeUri:source.uri,afterUri:renamed.uri||newUri,
     oldName:entry.name,newName,sourceDirUri:sourceDirectoryUri};
 }
-export async function replaceWithCrop(entry, outputUri) {
-  const source = new File(entry.uri);
-  const backup = new File(privateFolder('crop-backups'), uniquePrivateName(entry.name));
+// Android SAF documents are NOT ordinary paths. Cropping uses the same
+// non-overwriting, verified directory-copy transaction as video cutting;
+// never copy the rendered bytes over an existing content:// document URI.
+export async function replaceWithCrop(entry, outputUri, sourceDirectoryUri) {
+  const dir=new Directory(sourceDirectoryUri);
+  if(!dir.exists)throw new Error('Source folder is no longer accessible. Select it again before cropping.');
+  const source=findItem(dir,entry.name);
+  if(!(source instanceof File)||!source.exists||(entry.uri&&source.uri!==entry.uri))
+    throw new Error('Original image has changed. Refresh the folder before cropping.');
+  const rendered=new File(outputUri);
+  if(!rendered.exists||!(rendered.size>0))throw new Error('Rendered crop is missing or empty. Original unchanged.');
+  const backup=new File(privateFolder('crop-backups'),uniquePrivateName(entry.name));
   await source.copy(backup);
-  const result = new File(outputUri);
-  try { await result.copy(source, {overwrite:true}); }
-  catch (e) { throw new Error('Crop could not replace original; the backup is preserved: ' + e.message); }
-  return {type:'crop', sourceUri:entry.uri, backupUri:backup.uri, name:entry.name};
+  if(!backup.exists||backup.size!==source.size)
+    throw new Error('Image backup could not be verified. Original unchanged.');
+
+  const pendingName=cutPendingName(entry.name);
+  const imageSize=rendered.size;
+  let stage=null,pending=null,deletionAttempted=false;
+  try {
+    stage=await stageNamedFile(rendered,pendingName);
+    pending=await copyVerifiedToDirectory(stage.staged,dir,pendingName);
+    if(!backup.exists||!pending.exists||pending.size!==imageSize)
+      throw new Error('Crop staging failed verification. Original unchanged.');
+    // Only the app-private file:// staged copy is renamed.
+    stage.staged.rename(entry.name);
+    if(!stage.staged.exists||stage.staged.name!==entry.name||stage.staged.size!==imageSize)
+      throw new Error('Could not prepare cropped image. Original unchanged.');
+    const old=findItem(dir,entry.name);
+    if(!(old instanceof File)||old.uri!==source.uri||old.size!==backup.size)
+      throw new Error('Source image changed while cropping. Original unchanged.');
+    deletionAttempted=true;
+    old.delete();
+    if(findItem(dir,entry.name))throw new Error('Original image still exists after removal; replacement cancelled.');
+    const finalFile=await copyVerifiedToDirectory(stage.staged,dir,entry.name);
+    if(!finalFile.exists||finalFile.size!==imageSize)
+      throw new Error('Cropped image did not pass final verification.');
+    let warning=null;
+    try{
+      const p=findItem(dir,pendingName);
+      if(p instanceof File&&p.uri===pending.uri&&p.size===imageSize)p.delete();
+    }catch{warning='Crop saved, but an extra __iks_pending image may remain in the folder.';}
+    return {type:'crop',sourceUri:finalFile.uri,sourceDirUri:sourceDirectoryUri,backupUri:backup.uri,name:entry.name,warning};
+  }catch(err){
+    const reason=err?.message||String(err);
+    let old=null;
+    try{old=findItem(dir,entry.name);}catch{
+      throw new Error('Crop failed and the source folder cannot be checked. An original backup is retained in app storage. '+reason);
+    }
+    if(old instanceof File){
+      if(!deletionAttempted){
+        // Source still exists untouched. Any pending copy can be left in place
+        // for manual inspection if its cleanup fails.
+        try{const p=findItem(dir,pendingName);if(p instanceof File&&pending&&p.uri===pending.uri&&p.size===imageSize)p.delete();}catch{}
+        throw new Error('Crop failed before replacing the original. Original image remains unchanged. '+reason);
+      }
+      throw new Error('Crop failed after replacement began. A file with the original name exists; inspect it before deleting anything. The original is retained in app-private crop backups. '+reason);
+    }
+    let restoration=null;
+    try {
+      restoration=await stageNamedFile(backup,entry.name);
+      await copyVerifiedToDirectory(restoration.staged,dir,entry.name);
+      try{const p=findItem(dir,pendingName);if(p instanceof File&&pending&&p.uri===pending.uri&&p.size===imageSize)p.delete();}catch{}
+      throw new Error('Crop failed. Original image restored from backup. '+reason);
+    }catch(restoreError){
+      if(String(restoreError.message).startsWith('Crop failed. Original image restored'))throw restoreError;
+      throw new Error('Crop failed AND automatic restoration failed. The original image is still in app-private crop backups; do not uninstall the app or clear crop backups. '+(restoreError?.message||restoreError));
+    }finally{cleanStage(restoration);}
+  }finally{cleanStage(stage);}
 }
 // SAF content:// documents cannot be renamed with Expo File.rename().
 // Cut transaction: backup original privately; verify a pending trimmed video
@@ -281,13 +388,37 @@ export async function undoOp(op, sourceUri) {
     const copy = new File(op.toUri); if (copy.exists) copy.delete(); return;
   }
   if (op.type === 'move') {
+    const originalFolder=op.fromDirUri || sourceUri;
+    if(op.strategy==='native' && originalFolder && op.toDirUri){
+      try {
+        const restoredUri=await moveAndroidDocument(op.toUri,op.toDirUri,originalFolder);
+        // This URI is authoritative: Android is allowed to change the
+        // document identity when moving it. The caller can update its gallery
+        // directly without scanning the entire source folder.
+        return {restoredUri,strategy:'native'};
+      }catch(e){
+        // Same rule as forward move: do not copy after an ambiguous failure.
+        if(!String(e?.message||e).includes('IKS_NATIVE_MOVE_UNSUPPORTED'))throw e;
+      }
+    }
     const current = new File(op.toUri);
-    const originalDir = new Directory(sourceUri);
-    await copyVerifiedToDirectory(current, originalDir, op.name);
+    const originalDir = new Directory(originalFolder);
+    const restored=await copyVerifiedToDirectory(current, originalDir, op.name);
     current.delete(); // only after the restored copy was verified
-    return;
+    return {restoredUri:restored.uri,strategy:'copy-delete'};
   }
   if (op.type === 'delete') {
+    if(op.strategy==='native-trash' && op.toDirUri && (op.fromDirUri||sourceUri)) {
+      try {
+        const restoredUri=await moveAndroidDocument(op.toUri,op.toDirUri,op.fromDirUri||sourceUri);
+        return {restoredUri,strategy:'native-trash'};
+      } catch(e) {
+        // After an ambiguous native error, never try a second move/copy.
+        // A provider without move support is unexpected after a successful
+        // fast deletion; leave the document in its bin, never risk loss.
+        throw e;
+      }
+    }
     const backup = new File(op.toUri);
     if (!backup.exists) throw new Error('Deleted file backup is no longer available.');
     const originalDir = new Directory(sourceUri);
@@ -333,11 +464,39 @@ export async function undoOp(op, sourceUri) {
     return;
   }
   if (op.type === 'crop') {
-    const backup = new File(op.backupUri);
-    if (!backup.exists) throw new Error('Crop backup has gone missing.');
-    await backup.copy(new File(op.sourceUri), {overwrite:true}); backup.delete(); return;
+    const backup=new File(op.backupUri);
+    if(!backup.exists)throw new Error('Crop backup is missing; cannot undo.');
+    const directoryUri=op.sourceDirUri || sourceUri;
+    const dir=new Directory(directoryUri);
+    const current=findItem(dir,op.name);
+    if(!(current instanceof File)||!current.exists)
+      throw new Error('Cropped image is missing. Original backup is retained in app storage.');
+    // Restore through a new verified SAF document, not overwrite:true.
+    await replaceWithCrop({name:op.name,uri:current.uri},backup.uri,directoryUri);
+    // Keep the original backup until the user explicitly clears backups.
+    return;
   }
   throw new Error('Unsupported undo action.');
+}
+// Manual recovery for an image whose SAF replacement failed after deletion.
+// This copies the original backup out without touching the app-private copy.
+export function listCropBackups() {
+  return privateFolder('crop-backups').list()
+    .filter(f=>f instanceof File&&f.exists)
+    .map(f=>({uri:f.uri,name:originalBackupName(f.name),size:f.size}));
+}
+export async function recoverCropBackup(backupUri, targetDirectoryUri) {
+  const backup=new File(backupUri);
+  if(!backup.exists||!(backup.size>0))throw new Error('Original image backup is missing or empty.');
+  const dest=new Directory(targetDirectoryUri);
+  if(!dest.exists)throw new Error('Recovery destination is inaccessible. Choose another folder.');
+  const filename=nextAvailableName(dest,originalBackupName(backup.name));
+  let stage=null;
+  try {
+    stage=await stageNamedFile(backup,filename);
+    const recovered=await copyVerifiedToDirectory(stage.staged,dest,filename);
+    return {name:recovered.name,uri:recovered.uri};
+  }finally{cleanStage(stage);}
 }
 export function backupCount() { return privateFolder('crop-backups').list().length; }
 export function clearCropBackups() {
